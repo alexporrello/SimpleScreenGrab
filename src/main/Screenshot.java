@@ -1,15 +1,14 @@
 package main;
 
 import java.awt.AWTException;
-import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Image;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -24,65 +23,77 @@ import javax.imageio.ImageWriter;
 import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.JFileChooser;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-public class Screenshot extends JFrame {
+import jm.JMButton;
+import jm.JMLabel;
+import jm.JMTextField;
+
+public class Screenshot extends JDialog {
 	private static final long serialVersionUID = 3257860364347012082L;
 
-	int xTop = -1;
-	int yTop = -1;
+	/** The default save location of any screengrabs **/
+	private File defaultLocal = new File(new JFileChooser().getFileSystemView().getDefaultDirectory() + "\\SimpleScreenGrabs");
 
-	int xBot = -1;
-	int yBot = -1;
-
-	JPanel drawPanel;
-
-	File defaultLocal = new File("C:\\Users\\porrello\\Pictures\\ScreenGrabs");
+	/** The button by which the user takes a quick screenshot of the main monitor. **/
+	JMButton grab = new JMButton("Grab");
+	
+	/** The button by which a user takes a screenshot of a specified region of the main monitor. **/
+	JMButton rect = new JMButton("  Region  ");
+	
+	/** Displays the status and path of a capture. **/
+	JMLabel status = new JMLabel("Press 'Grab' to Capture.");
+	
+	/** The field where the user specifies a save name for the file. **/
+	JMTextField field = new JMTextField("");
 
 	public Screenshot() {
-		setLookAndFeel();
+		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		setIconImages(Screenshot.imageIcon());
+		setSize(new Dimension(225, 125));
+		setLayout(new GridBagLayout());
+		setTitle("SimpleScreenGrab");
+		setLocationByPlatform(true);
+		setAlwaysOnTop(true);
+		setResizable(false);
 
-		JDialog dialog = new JDialog();
-		dialog.setTitle("SimpleScreenGrab");
-		dialog.setAlwaysOnTop(true);
-		dialog.setSize(new Dimension(200, 100));
-		dialog.setIconImages(Screenshot.imageIcon());
-		dialog.setLocationByPlatform(true);
+		if(!defaultLocal.exists()) {
+			defaultLocal.mkdir();
+		}
 
-		JTextField field = new JTextField("");
-		dialog.add(field, BorderLayout.NORTH);
+		addButtonListeners();
+		
+		int nw = GridBagConstraints.NORTHWEST;
 
-		JButton capture = new JButton("Grab");
-		dialog.add(capture, BorderLayout.CENTER);
+		add(field,  new GridBagConstraints(0, 0, 2, 1, 1.0, 0.0, nw, GridBagConstraints.HORIZONTAL, new Insets(3,3,3,3), 0, 0));
+		add(grab,   new GridBagConstraints(0, 1, 1, 1, 1.0, 1.0, nw, GridBagConstraints.BOTH,       new Insets(0,3,3,3), 0, 0));
+		add(rect,   new GridBagConstraints(1, 1, 1, 1, 0.0, 1.0, nw, GridBagConstraints.BOTH,       new Insets(0,0,3,3), 0, 0));
+		add(status, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0, nw, GridBagConstraints.HORIZONTAL, new Insets(0,3,3,3), 0, 0));
 
-		JButton captureRect = new JButton("Region");
-		dialog.add(captureRect, BorderLayout.EAST);
+		setVisible(true);
+	}
 
-		JLabel status = new JLabel("Press 'Grab' to Capture.");
-		dialog.add(status, BorderLayout.SOUTH);
-
-		capture.addActionListener(e -> {
+	public void addButtonListeners() {
+		field.setToolTipText("Enter the filename here.");
+		grab.addActionListener(e -> {
 			try {
-				dialog.setVisible(false);
+				setVisible(false);
 
 				writeBufferedImage(new Robot().createScreenCapture(new Rectangle(0, 93, 1920, 955)), 
 						defaultLocal.getAbsolutePath() + "\\" + field.getText() + ".png");
 
 				status.setText("Saved as " + field.getText() + ".png");
-				dialog.setVisible(true);
+				setVisible(true);
 			} catch (IOException | AWTException f) {
 				f.printStackTrace();
 			}
 		});
-		captureRect.addActionListener(e -> {
+
+		rect.addActionListener(e -> {
 			DrawJFrame toDraw = new DrawJFrame();
 			toDraw.setVisible(true);
 
@@ -91,16 +102,17 @@ public class Screenshot extends JFrame {
 				public void mouseReleased(MouseEvent e) {					
 					if(SwingUtilities.isLeftMouseButton(e)) {
 						try {									
-							dialog.setVisible(false);
+							setVisible(false);
 							toDraw.setVisible(false);
 
-							writeBufferedImage(new Robot().createScreenCapture(new Rectangle(toDraw.newTopX+1, toDraw.newTopY+1, toDraw.width-1, toDraw.height-1)), 
+							writeBufferedImage(new Robot().createScreenCapture(
+									new Rectangle(toDraw.newTopX+1, toDraw.newTopY+1, toDraw.width-1, toDraw.height-1)), 
 									defaultLocal.getAbsolutePath() + "\\" + field.getText() + ".png");
 
 							status.setText("Saved as " + field.getText() + ".png");
 
 							toDraw.dispose();
-							dialog.setVisible(true);
+							setVisible(true);
 						} catch (IOException | AWTException f) {
 							f.printStackTrace();
 						}
@@ -110,78 +122,25 @@ public class Screenshot extends JFrame {
 				}
 			});
 		});
-
-		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		dialog.setVisible(true);
-	}
-
-	public Screenshot(Boolean because) {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setExtendedState(JFrame.MAXIMIZED_BOTH);
-		setUndecorated(true);
-		setOpacity(.9f);
-
-		drawPanel = new JPanel() {
-			private static final long serialVersionUID = -4962778622132458985L;
-
+		
+		status.setToolTipText("To be taken to the last captured file, click here.");
+		status.addMouseListener(new MouseAdapter() {
 			@Override
-			public void paintComponents(Graphics g) {
-				super.paintComponents(g);
-
-				if(xTop != -1 && yTop != -1) {
-					g.setColor(Color.RED);
-					g.fillRect(xTop, yTop, xBot-xTop, yBot-yTop);
-				}
-			}
-		};
-		add(drawPanel, BorderLayout.CENTER);
-
-		addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseReleased(MouseEvent arg0) {
+			public void mouseClicked(MouseEvent e) {
 				try {
-					setOpacity(0f);
-
-					writeBufferedImage(new Robot().createScreenCapture (
-							new Rectangle(xTop, yTop, arg0.getX()-xTop, arg0.getY()-yTop)),
-							"C:\\Users\\porrello\\Desktop\\shot.png");
-
-					xTop = -1;
-					yTop = -1;
-
-					System.out.println(xTop + ", " + yTop + ", " + (arg0.getX()-xTop) + ", " + (arg0.getY()-yTop));
-
-					dispose();
-				} catch (IOException | AWTException e) {
-					e.printStackTrace();
+					if(status.getText().contains("Saved as ")) {
+						Runtime.getRuntime().exec("explorer.exe /select," + defaultLocal.getAbsolutePath() + "\\" + status.getText().replaceAll("Saved as ", ""));
+					} else {
+						Runtime.getRuntime().exec("explorer.exe /open," + defaultLocal.getAbsolutePath());
+					}
+				} catch (IOException e1) {
+					e1.printStackTrace();
 				}
 			}
-
-			@Override
-			public void mousePressed(MouseEvent arg0) {
-				xTop = arg0.getX();
-				yTop = arg0.getY();
-
-				System.out.println(arg0.getX() + " ," + arg0.getY());
-
-				drawPanel.repaint();
-			}
 		});
-
-		addMouseMotionListener(new MouseMotionAdapter() {			
-			@Override
-			public void mouseDragged(MouseEvent arg0) {
-				xBot = arg0.getX();
-				yBot = arg0.getY();
-
-				drawPanel.repaint();
-			}
-		});
-
-		setVisible(true);
 	}
 
-	public static void writeBufferedImage(BufferedImage image, String path) throws FileNotFoundException, IOException {
+	private static void writeBufferedImage(BufferedImage image, String path) throws FileNotFoundException, IOException {
 		JPEGImageWriteParam jpegParams = new JPEGImageWriteParam(null);
 		jpegParams.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 		jpegParams.setCompressionQuality(1f);
@@ -191,17 +150,13 @@ public class Screenshot extends JFrame {
 		writer.write(null, new IIOImage(image, null, null), jpegParams);
 	}
 
-	public static void setLookAndFeel() {
+	private static void setLookAndFeel() {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException
 				| IllegalAccessException | UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static void main(String[] args) {
-		new Screenshot();
 	}
 
 	/** Creates the image icons that will be displayed on the app's taskbar **/
@@ -217,9 +172,13 @@ public class Screenshot extends JFrame {
 		return icons;
 	}
 
+	/** Loads image for the method that loads image icons. **/
 	private static Image loadImage(String url) {		
 		return new ImageIcon(Screenshot.class.getClassLoader().getResource(url)).getImage();
 	}
-
+	
+	public static void main(String[] args) {
+		setLookAndFeel();
+		new Screenshot();
+	}
 }
-
