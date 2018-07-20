@@ -60,6 +60,12 @@ public class DrawJFrame extends JFrame {
 
 			g.setColor(Color.BLUE);
 			g.drawRect(newTopX, newTopY, width, height);
+			
+			g.setColor(Color.BLACK);
+			g.fillRect(0, 0, getWidth(), newTopY);
+			g.fillRect(0, newTopY+height, getWidth(), newTopY+getHeight());
+			g.fillRect(0, 0, newTopX, getHeight());
+			g.fillRect(newTopX+width, 0, getWidth(), getHeight());
 		}
 	};
 	
@@ -81,7 +87,7 @@ public class DrawJFrame extends JFrame {
 	public DrawJFrame() {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setUndecorated(true);
-		setOpacity(.5f);
+		setOpacity(.3f);
 
 		add(panel, BorderLayout.CENTER);
 		panel.setOpaque(false);
